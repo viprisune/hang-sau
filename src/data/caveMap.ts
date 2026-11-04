@@ -68,8 +68,8 @@ export const CAVE_MAP: readonly (readonly TileType[])[] = [
   [1,1,2,2,2,2,0,0,0,0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // row 06: Entrance -> Winding
   [1,1,1,2,2,1,1,1,0,0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // row 07: Winding passage
   [1,1,1,1,1,1,1,1,1,0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1], // row 08: Chamber 2 top
-  [1,1,1,1,1,1,1,1,1,1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1], // row 09
-  [1,1,1,1,1,1,1,1,1,1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], // row 10: Chamber 1 top
+  [1,1,1,1,1,1,1,1,1,1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1], // row 09: High-Ground Safe Room (cols 18..22)
+  [1,1,1,1,1,1,1,1,1,1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], // row 10: High Northern Ridge (cols 12..17) -> Safe Room (cols 18..22)
   [1,1,1,1,1,1,1,1,1,1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], // row 11
   [1,1,1,1,1,1,1,1,1,1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1], // row 12
   [1,1,1,1,1,1,1,1,1,1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1], // row 13
@@ -164,6 +164,20 @@ export const CHAMBER_PROPS: readonly ChamberProp[] = [
   { x: 19.6 * ts, z: 20.5 * ts, radius: 0.42, height: 0.7, kind: 'boulder', solid: true },
   { x: 17.5 * ts, z: 14.5 * ts, radius: 0.36, height: 1.1, kind: 'stalactite', solid: false },
   { x: 22.5 * ts, z: 16.2 * ts, radius: 0.4, height: 1.25, kind: 'stalactite', solid: false },
+
+  // Narrow Corridor rockfall behind the rope pickup (col 28.5, row 16)
+  { x: 28.3 * ts, z: 16.3 * ts, radius: 0.68, height: 1.15, kind: 'boulder', solid: true },
+  { x: 28.6 * ts, z: 16.7 * ts, radius: 0.68, height: 1.25, kind: 'boulder', solid: true },
+
+  // Side Chamber beyond the gap (rows 24..26, cols 19..22) framing stalagmites & back rockfall
+  { x: 19.5 * ts, z: 25.4 * ts, radius: 0.4, height: 1.55, kind: 'stalagmite', solid: true },
+  { x: 22.2 * ts, z: 25.4 * ts, radius: 0.42, height: 1.65, kind: 'stalagmite', solid: true },
+  { x: 20.5 * ts, z: 25.2 * ts, radius: 0.36, height: 1.1, kind: 'stalactite', solid: false },
+  { x: 20.3 * ts, z: 26.8 * ts, radius: 0.78, height: 1.35, kind: 'boulder', solid: true },
+  { x: 21.1 * ts, z: 26.9 * ts, radius: 0.82, height: 1.45, kind: 'boulder', solid: true },
+  { x: 22.0 * ts, z: 26.8 * ts, radius: 0.82, height: 1.4, kind: 'boulder', solid: true },
+  { x: 22.9 * ts, z: 26.6 * ts, radius: 0.85, height: 1.5, kind: 'boulder', solid: true },
+  { x: 23.6 * ts, z: 26.2 * ts, radius: 0.78, height: 1.3, kind: 'boulder', solid: true },
 
   // Chamber 2 (East Cavern: cols 38..54, rows 8..24)
   { x: 40.4 * ts, z: 10.3 * ts, radius: 0.5, height: 1.9, kind: 'stalagmite', solid: true },

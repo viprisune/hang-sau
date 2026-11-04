@@ -1,0 +1,6 @@
+{
+  "summary": "Revised implementation plan incorporating tile-grid line-of-sight surface memory, per-tile-face partial buffer updates, fog-exempt remembered visibility, pause/hidden-tab timer & audio freeze, and Vietnamese system font fallbacks.",
+  "updatedAt": "2026-11-04T09:06:32.222621861Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

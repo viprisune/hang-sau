@@ -32,22 +32,26 @@ Trò chơi sinh tồn thám hiểm hang động 3D góc nhìn thứ nhất (Firs
 
 ## Điều khiển trong trò chơi
 
-- **Bắt đầu:** Nhấn nút **Bắt đầu** trên màn hình khởi động để vào hang.
+- **Bắt đầu:** Nhấn nút **Bắt đầu** trên màn hình khởi động để vào hang (kích hoạt âm thanh Web Audio).
 - **Quan sát (Mouse Look):** Nhấp chuột vào khung hình để khóa con trỏ chuột (Pointer Lock) và xoay góc nhìn. Nếu chạy trong khung xem trước (iframe) chặn khóa chuột, trò chơi tự động chuyển sang chế độ **giữ và kéo chuột trái** để xoay góc nhìn kèm gợi ý mở trong thẻ mới.
 - **Di chuyển (Đi bộ - 1.8 m/s):** Phím `W`, `A`, `S`, `D` hoặc các phím mũi tên (`↑`, `↓`, `←`, `→`).
 - **Chạy nhanh (3.2 m/s):** Giữ phím `Shift` trong khi di chuyển.
-- **Menu Tạm dừng & Cài đặt (`Esc`):** Nhấn `Esc` để giải phóng chuột và mở bảng cài đặt:
+- **Quẹt diêm (`F`):** Thắp 1 que diêm (người chơi bắt đầu với 5 que diêm, mỗi que cháy trong `25 giây` với tầm chiếu sáng `7.0 m` giảm dần xuống `3.5 m` trong 5 giây cuối). Nhấn `F` khi diêm đang cháy sẽ hiển thị thông báo tiếng Việt và không tốn thêm diêm.
+- **Menu Tạm dừng & Cài đặt (`Esc`):** Nhấn `Esc` để giải phóng chuột, tạm dừng bộ đếm thời gian diêm / âm thanh và mở bảng cài đặt:
   - **Độ nhạy chuột:** `0.2x` – `3.0x`
   - **Góc nhìn (FOV):** `60°` – `90°` (mặc định `72°`)
-  - **Nhấp nhô đầu (Head-bob):** Bật / Tắt
+  - **Âm lượng tổng & Tắt tiếng:** Điều chỉnh âm lượng Web Audio (`0%–100%`) hoặc tắt tiếng
+  - **Nhấp nhô & lắc nhẹ đầu (Head-bob):** Bật / Tắt
 - **Thông số kỹ thuật (`F3`):** Nhấn phím `F3` để bật/tắt bảng hiển thị `FPS`, tọa độ `(X, Y, Z)` theo mét, ô gạch `(cột, hàng)`, tốc độ và số lệnh vẽ (`Draw calls`).
 
 ## Cấu trúc thư mục
 
-- `src/config.ts`: Chứa toàn bộ các thông số có thể tinh chỉnh (tỷ lệ thế giới `1 ô = 2m`, độ cao trần `2.8m` / hành lang hẹp `2.0m`, độ cao mắt `1.6m`, tốc độ đi bộ `1.8 m/s` / chạy `3.2 m/s`, bán kính va chạm `0.3m`, thông số sương mù, ánh sáng môi trường và bảng màu lạnh).
+- `src/config.ts`: Chứa toàn bộ các thông số có thể tinh chỉnh (tỷ lệ thế giới, trần hang, tốc độ, bán kính va chạm, thông số diêm, ánh sáng, sương mù, trí nhớ bề mặt, hiệu ứng vignette/grain và Web Audio).
 - `src/strings.ts`: Tập trung toàn bộ chuỗi văn bản tiếng Việt hiển thị cho người chơi.
 - `src/data/caveMap.ts`: Dữ liệu bản đồ hang động mảng 2 chiều `60x40` cùng danh sách măng đá, nhũ đá và tảng đá trong hai khoang hang.
-- `src/logic/movement.ts`: Logic di chuyển trên mặt phẳng `x/z`, xoay góc nhìn và giải quyết va chạm hình tròn bán kính `0.3m` chống xuyên tường (hoàn toàn độc lập, không import Three.js).
-- `src/game/caveGeometry.ts`: Tạo hình học 3D low-poly flat-shaded cho sàn, trần, tường đá, măng đá với biến thiên màu đỉnh (`vertexColors`) và gộp lưới (`mergeGeometries`) tối ưu số lệnh vẽ.
-- `src/game/caveRenderer.ts`: Quản lý vòng đời `THREE.WebGLRenderer`, camera góc nhìn thứ nhất, khóa chuột / kéo chuột dự phòng, bộ đếm `FPS` / `Draw calls` và giải phóng tài nguyên khi hủy component.
-- `src/App.tsx`: Khung ứng dụng React với màn hình bắt đầu, menu cài đặt `Esc`, lớp phủ `F3` và gắn kết canvas Three.js an toàn trong `StrictMode`.
+- `src/logic/movement.ts`: Logic di chuyển trên mặt phẳng `x/z`, xoay góc nhìn và giải quyết va chạm hình tròn bán kính `0.3m` chống xuyên tường (không import Three.js).
+- `src/logic/lightAndMemory.ts`: Logic trạng thái diêm, ánh sáng nhấp nháy, kiểm tra tầm nhìn thẳng (line-of-sight) trên lưới ô gạch cho trí nhớ bề mặt theo từng mặt ô gạch và độ nghiêng camera khi bước đi (không import Three.js).
+- `src/audio/caveAudio.ts`: Bộ tổng hợp âm thanh Web Audio thuần thủ tục (gió hang trầm, tiếng nước nhỏ giọt ngẫu nhiên, tiếng bước chân trên đá, tiếng quẹt diêm và tắt diêm).
+- `src/game/caveGeometry.ts`: Tạo hình học 3D low-poly flat-shaded theo từng mặt ô gạch, cập nhật cục bộ vùng bộ đệm (`addUpdateRange`) khi ghi nhớ bề mặt và mở rộng shader giữ bề mặt đã nhớ hiển thị mờ vượt qua sương mù tối.
+- `src/game/caveRenderer.ts`: Quản lý vòng đời `THREE.WebGLRenderer`, 1 đèn `PointLight` động + `AmbientLight`, tạm dừng khi mở `Esc` hoặc ẩn thẻ trình duyệt, và giải phóng tài nguyên khi hủy component.
+- `src/App.tsx`: Khung ứng dụng React với màn hình bắt đầu, HUD tối giản góc dưới trái, lớp phủ vignette/film-grain, menu cài đặt `Esc` và bảng `F3`.

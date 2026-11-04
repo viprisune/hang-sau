@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { CHAMBER_PROPS, isWallTile, TileType } from '../data/caveMap';
+import { getTileWaterStatus, LEVEL_GAP } from '../data/levelData';
 
 export interface MovementInput {
   forward: boolean;
@@ -32,24 +33,50 @@ interface WallBox2D {
   distSq: number;
 }
 
+function pushBoxCandidate(
+  candidates: WallBox2D[],
+  x: number,
+  z: number,
+  minX: number,
+  maxX: number,
+  minZ: number,
+  maxZ: number
+): void {
+  const nearestX = Math.max(minX, Math.min(x, maxX));
+  const nearestZ = Math.max(minZ, Math.min(z, maxZ));
+  const dx = x - nearestX;
+  const dz = z - nearestZ;
+  candidates.push({
+    minX,
+    maxX,
+    minZ,
+    maxZ,
+    distSq: dx * dx + dz * dz,
+  });
+}
+
 /**
- * Resolves a circle of radius `radius` at `(x, z)` against nearby solid wall tiles
+ * Resolves a circle of radius `radius` at `(x, z)` against nearby solid wall tiles,
+ * deep-flooded tiles (`getTileWaterStatus === 'deep'`), the dangerous gap pit
+ * (impassable unless `ropeTied` is true, which opens a narrow crossing lane),
  * and solid chamber stalagmites/boulders.
- *
- * Sorting candidate wall tiles by nearest distance ensures cardinal face contacts
- * are resolved before corner contacts, providing smooth wall sliding without catching
- * on internal tile seams.
  */
 function resolveCircleCollision(
   map: readonly (readonly TileType[])[],
   inX: number,
   inZ: number,
   radius: number,
-  tileSize: number
+  tileSize: number,
+  ropeTied: boolean,
+  waterLevel: number,
+  startCol: number,
+  startRow: number
 ): { x: number; z: number } {
   let x = inX;
   let z = inZ;
   const rSq = radius * radius;
+  const startIsDeep =
+    getTileWaterStatus(startCol, startRow, waterLevel) === 'deep';
 
   // Two relaxation passes handle tight 90-degree corners and 1-tile narrow corridors cleanly
   for (let pass = 0; pass < 2; pass++) {
@@ -59,23 +86,63 @@ function resolveCircleCollision(
     const candidates: WallBox2D[] = [];
     for (let row = centerRow - 1; row <= centerRow + 1; row++) {
       for (let col = centerCol - 1; col <= centerCol + 1; col++) {
-        if (!isWallTile(map, col, row)) continue;
-        const minX = col * tileSize;
-        const maxX = (col + 1) * tileSize;
-        const minZ = row * tileSize;
-        const maxZ = (row + 1) * tileSize;
+        const isWall = isWallTile(map, col, row);
+        const isDeepWater =
+          !isWall &&
+          getTileWaterStatus(col, row, waterLevel) === 'deep' &&
+          // If the tide rose to 'deep' while the player was already standing on (startCol, startRow),
+          // allow them to step off their own tile onto an adjacent shallow/dry tile without pinning them inside.
+          !(startIsDeep && col === startCol && row === startRow);
 
-        const nearestX = Math.max(minX, Math.min(x, maxX));
-        const nearestZ = Math.max(minZ, Math.min(z, maxZ));
-        const dx = x - nearestX;
-        const dz = z - nearestZ;
-        candidates.push({
-          minX,
-          maxX,
-          minZ,
-          maxZ,
-          distSq: dx * dx + dz * dz,
-        });
+        if (!isWall && !isDeepWater) continue;
+        pushBoxCandidate(
+          candidates,
+          x,
+          z,
+          col * tileSize,
+          (col + 1) * tileSize,
+          row * tileSize,
+          (row + 1) * tileSize
+        );
+      }
+    }
+
+    // Gap collision: impassable across full pit width when untied;
+    // when tied, opens a narrow route along [bridgeCenterX - bridgeHalfWidth, bridgeCenterX + bridgeHalfWidth]
+    if (!ropeTied) {
+      pushBoxCandidate(
+        candidates,
+        x,
+        z,
+        LEVEL_GAP.minX,
+        LEVEL_GAP.maxX,
+        LEVEL_GAP.minZ,
+        LEVEL_GAP.maxZ
+      );
+    } else {
+      const leftEdge = LEVEL_GAP.bridgeCenterX - LEVEL_GAP.bridgeHalfWidth;
+      const rightEdge = LEVEL_GAP.bridgeCenterX + LEVEL_GAP.bridgeHalfWidth;
+      if (leftEdge > LEVEL_GAP.minX) {
+        pushBoxCandidate(
+          candidates,
+          x,
+          z,
+          LEVEL_GAP.minX,
+          leftEdge,
+          LEVEL_GAP.minZ,
+          LEVEL_GAP.maxZ
+        );
+      }
+      if (rightEdge < LEVEL_GAP.maxX) {
+        pushBoxCandidate(
+          candidates,
+          x,
+          z,
+          rightEdge,
+          LEVEL_GAP.maxX,
+          LEVEL_GAP.minZ,
+          LEVEL_GAP.maxZ
+        );
       }
     }
 
@@ -147,20 +214,32 @@ export function stepPlayerMovement(
   input: MovementInput,
   deltaSeconds: number,
   map: readonly (readonly TileType[])[],
-  headBobEnabled = true
+  headBobEnabled = true,
+  ropeTied = false,
+  canRun = true,
+  waterLevel = 0
 ): PlayerMovementState {
   const clampedDelta = Math.min(Math.max(deltaSeconds, 0), CONFIG.MAX_DELTA_SEC);
 
   const moveForward = (input.forward ? 1 : 0) - (input.backward ? 1 : 0);
   const moveRight = (input.right ? 1 : 0) - (input.left ? 1 : 0);
 
+  const startCol = Math.floor(state.x / CONFIG.TILE_SIZE);
+  const startRow = Math.floor(state.z / CONFIG.TILE_SIZE);
+  const waterStatus = getTileWaterStatus(startCol, startRow, waterLevel);
+  const speedMultiplier =
+    waterStatus === 'shallow' || waterStatus === 'deep'
+      ? CONFIG.SHALLOW_SPEED_MULTIPLIER
+      : 1.0;
+
   const isMoving = moveForward !== 0 || moveRight !== 0;
-  const isRunning = isMoving && input.run;
-  const targetSpeed = !isMoving
+  const isRunning = isMoving && input.run && canRun;
+  const baseSpeed = !isMoving
     ? 0
     : isRunning
       ? CONFIG.RUN_SPEED
       : CONFIG.WALK_SPEED;
+  const targetSpeed = baseSpeed * speedMultiplier;
 
   let x = state.x;
   let z = state.z;
@@ -187,7 +266,7 @@ export function stepPlayerMovement(
     const totalDz = vz * clampedDelta;
     const totalDist = Math.hypot(totalDx, totalDz);
 
-    // Sub-step movement so no step exceeds MAX_STEP_DISTANCE (0.08m << 0.3m radius)
+    // Sub-step movement so no step exceeds MAX_STEP_DISTANCE (0.08m << 0.45m radius)
     const steps = Math.max(1, Math.ceil(totalDist / CONFIG.MAX_STEP_DISTANCE));
     const stepDx = totalDx / steps;
     const stepDz = totalDz / steps;
@@ -198,7 +277,11 @@ export function stepPlayerMovement(
         x + stepDx,
         z + stepDz,
         CONFIG.PLAYER_RADIUS,
-        CONFIG.TILE_SIZE
+        CONFIG.TILE_SIZE,
+        ropeTied,
+        waterLevel,
+        startCol,
+        startRow
       );
       x = resolved.x;
       z = resolved.z;
