@@ -1,6 +1,6 @@
 {
   "name": "HANG SÂU",
-  "description": "Trò chơi sinh tồn thám hiểm hang động 2D góc nhìn từ trên xuống.",
+  "description": "Trò chơi sinh tồn thám hiểm hang động 3D góc nhìn thứ nhất.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -17,6 +17,21 @@ export interface TileCoord {
   row: number;
 }
 
+export interface ChamberProp {
+  /** World X coordinate in metres */
+  x: number;
+  /** World Z coordinate in metres */
+  z: number;
+  /** Base radius in metres */
+  radius: number;
+  /** Height in metres */
+  height: number;
+  /** Prop kind: stalagmite (floor cone), boulder (low rock), stalactite (ceiling cone) */
+  kind: 'stalagmite' | 'boulder' | 'stalactite';
+  /** Whether player collides with this prop on the floor */
+  solid: boolean;
+}
+
 /**
  * Player initial spawn tile inside the Cave Entrance.
  */
@@ -26,15 +41,20 @@ export const PLAYER_SPAWN_TILE: TileCoord = {
 };
 
 /**
- * 60 columns x 40 rows cave map (each tile is 32x32 px -> 1920x1280 px world).
+ * Initial player yaw (facing East along +X into the winding passage).
+ */
+export const PLAYER_INITIAL_YAW = -Math.PI / 2;
+
+/**
+ * 60 columns x 40 rows cave map (1 tile = 2m -> 120m x 80m world).
  *
  * Map features:
  * - Entrance (Cửa hang): Top-west (cols 2..6, rows 3..7) marked with TileType.ENTRANCE (2)
  * - Winding passages (Lối đi quanh co):
  *   - North-west winding passage from Entrance (cols 6..15, rows 5..14) into West Chamber
- *   - Southern winding passage loop (cols 20..46, rows 24..35) connecting both chambers
+ *   - Southern winding passage loop (cols 20..46, rows 24..32) connecting both chambers
  * - Chamber 1 (Khoang hang Tây): Cols 14..26, rows 10..22 with natural stone pillars
- * - Narrow corridor (Hành lang hẹp): 1-tile-wide (32px) tight squeeze at row 16, cols 27..37
+ * - Narrow corridor (Hành lang hẹp): 1-tile-wide (2m wide, 2.0m low ceiling) squeeze at row 16, cols 27..37
  * - Chamber 2 (Khoang hang Đông): Cols 38..54, rows 8..25 with central stalagmite formations
  */
 export const CAVE_MAP: readonly (readonly TileType[])[] = [
@@ -97,11 +117,64 @@ export function isWallTile(
 }
 
 /**
- * Converts a tile coordinate to the center pixel position of that tile.
+ * Identifies the 1-tile-wide narrow corridor connecting the West and East chambers
+ * where the ceiling drops to 2.0 metres.
  */
-export function tileToWorldCenter(tile: TileCoord): { x: number; y: number } {
+export function isNarrowCorridorTile(col: number, row: number): boolean {
+  return row === 16 && col >= 27 && col <= 37;
+}
+
+/**
+ * Returns the ceiling height (in metres) at a given tile coordinate.
+ */
+export function getCeilingHeightAt(col: number, row: number): number {
+  return isNarrowCorridorTile(col, row)
+    ? CONFIG.CORRIDOR_CEILING_HEIGHT
+    : CONFIG.CEILING_HEIGHT;
+}
+
+/**
+ * Converts a tile coordinate to the center world position (x, z) in metres.
+ */
+export function tileToWorldCenter(tile: TileCoord): { x: number; z: number } {
   return {
     x: (tile.col + 0.5) * CONFIG.TILE_SIZE,
-    y: (tile.row + 0.5) * CONFIG.TILE_SIZE,
+    z: (tile.row + 0.5) * CONFIG.TILE_SIZE,
   };
 }
+
+const ts = CONFIG.TILE_SIZE;
+
+/**
+ * Procedural stalagmites, boulders, and ceiling stalactites placed in the two chambers
+ * and entrance vestibule.
+ */
+export const CHAMBER_PROPS: readonly ChamberProp[] = [
+  // Entrance vestibule rocks
+  { x: 3.3 * ts, z: 4.3 * ts, radius: 0.35, height: 0.55, kind: 'boulder', solid: true },
+  { x: 5.7 * ts, z: 4.4 * ts, radius: 0.42, height: 1.35, kind: 'stalagmite', solid: true },
+
+  // Chamber 1 (West Cavern: cols 14..26, rows 10..22)
+  { x: 16.5 * ts, z: 11.4 * ts, radius: 0.48, height: 1.75, kind: 'stalagmite', solid: true },
+  { x: 21.4 * ts, z: 11.2 * ts, radius: 0.44, height: 1.5, kind: 'stalagmite', solid: true },
+  { x: 24.6 * ts, z: 12.2 * ts, radius: 0.38, height: 0.65, kind: 'boulder', solid: true },
+  { x: 15.6 * ts, z: 15.8 * ts, radius: 0.46, height: 1.85, kind: 'stalagmite', solid: true },
+  { x: 20.5 * ts, z: 15.4 * ts, radius: 0.52, height: 2.05, kind: 'stalagmite', solid: true },
+  { x: 25.3 * ts, z: 18.2 * ts, radius: 0.4, height: 1.4, kind: 'stalagmite', solid: true },
+  { x: 19.6 * ts, z: 20.5 * ts, radius: 0.42, height: 0.7, kind: 'boulder', solid: true },
+  { x: 17.5 * ts, z: 14.5 * ts, radius: 0.36, height: 1.1, kind: 'stalactite', solid: false },
+  { x: 22.5 * ts, z: 16.2 * ts, radius: 0.4, height: 1.25, kind: 'stalactite', solid: false },
+
+  // Chamber 2 (East Cavern: cols 38..54, rows 8..24)
+  { x: 40.4 * ts, z: 10.3 * ts, radius: 0.5, height: 1.9, kind: 'stalagmite', solid: true },
+  { x: 46.5 * ts, z: 10.5 * ts, radius: 0.55, height: 2.15, kind: 'stalagmite', solid: true },
+  { x: 52.3 * ts, z: 11.6 * ts, radius: 0.42, height: 0.75, kind: 'boulder', solid: true },
+  { x: 40.2 * ts, z: 14.2 * ts, radius: 0.45, height: 1.65, kind: 'stalagmite', solid: true },
+  { x: 49.6 * ts, z: 14.4 * ts, radius: 0.52, height: 1.95, kind: 'stalagmite', solid: true },
+  { x: 52.8 * ts, z: 16.5 * ts, radius: 0.46, height: 1.6, kind: 'stalagmite', solid: true },
+  { x: 43.8 * ts, z: 18.8 * ts, radius: 0.48, height: 1.8, kind: 'stalagmite', solid: true },
+  { x: 48.2 * ts, z: 19.2 * ts, radius: 0.38, height: 0.65, kind: 'boulder', solid: true },
+  { x: 45.2 * ts, z: 22.6 * ts, radius: 0.5, height: 1.75, kind: 'stalagmite', solid: true },
+  { x: 44.5 * ts, z: 13.5 * ts, radius: 0.42, height: 1.3, kind: 'stalactite', solid: false },
+  { x: 50.5 * ts, z: 17.5 * ts, radius: 0.38, height: 1.15, kind: 'stalactite', solid: false },
+];
